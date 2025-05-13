@@ -18,33 +18,34 @@ import java.util.Random;
 
 public class GamePanel extends JPanel implements ActionListener, KeyListener{
 
-    int boardWidth = 360;
-    int boardHeight = 640;
+    private int boardWidth = 360;
+    private int boardHeight = 640;
 
-    Image background, bird, pipe1, pipe2;
-    int birdX = boardWidth/8;
-    int birdY = boardWidth/2;
-    int birdHeight = 50;    
-    int birdWidth = 50;
+    private Image background, bird, pipe1, pipe2;
+    private int birdX = boardWidth/8;
+    private int birdY = boardWidth/2;
+    private int birdHeight = 50;    
+    private int birdWidth = 50;
 
-    int pipeX = boardWidth;
-    int pipeY = 0;
-    int pipeWidth = 64;
-    int pipeHeight = 512;
-    int speedX = -4;
-    Timer gameLoop;
-    Timer makePipe;
-    double score = 0;
-    boolean gameOver = false;
+    private int pipeX = boardWidth;
+    private int pipeY = 0;
+    private int pipeWidth = 64;
+    private int pipeHeight = 512;
+    private int speedX = -4;
+    private Timer gameLoop;
+    private Timer makePipe;
+    private double score = 0;
+    private int highScore = 0;
+    private boolean gameOver = false;
 
-    int lastSpeedUpScore=0;
+    private int lastSpeedUpScore=0;
     
     //private String playerName;
     private String playerName;
 
-    boolean showRestartPrompt = false;
+    private boolean showRestartPrompt = false;
     
-    Image gameOverBackground;
+    private Image gameOverBackground;
     
     //making the bird
     class Bird{
@@ -86,7 +87,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
         }
 
         if ((int)score % 5 == 0 && (int)score != lastSpeedUpScore) {
-            speedX -= .5; // Accelerate pipe speed
+            speedX -= 1; // Accelerate pipe speed
             lastSpeedUpScore = (int)score;
         }
 
@@ -142,13 +143,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
 
         pipes = new ArrayList<Pipe>();
 
-        makePipe = new Timer(1500, new ActionListener() {
+        makePipe = new Timer(1000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e){
                 makePipe();
             }
         });
         makePipe.start();
+        
+        // bgm
+        playBackgroundMusic("/[FINAL] FlappyBird MP/CMSC12_FlappyBird/bgmusic.wav");
     }
 
     private void loadImages() {
@@ -178,7 +182,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
     }
 
     public void draw(Graphics g){
-        System.out.println("tite");
+
         //drawing the background
         g.drawImage(background, 0, 0, 360,640, null);
         
@@ -203,9 +207,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
             // Draw the custom background
             g.drawImage(gameOverBackground, 0, 0, 360, 640, null);
 
-            g.setFont(new Font("04b_08_", Font.BOLD, 18));
+            g.setFont(new Font("04B08", Font.BOLD, 18));
             g.setColor(Color.WHITE);
-            g.drawString(playerName+ "'s Score: " + (int)score, 92, 332);
+            g.drawString(playerName+ "'s Score: " + (int)score, 88, 332);
+
+            if ((int) score>highScore){
+                g.drawString("NEW HIGH SCORE!", 88, 400);
+            }
 
             showRestartPrompt = true;
         } else {
@@ -213,7 +221,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
         }
         
         // show player name
-        g.setFont(new Font("Arial", Font.PLAIN, 20));
+        g.setFont(new Font("04B08", Font.PLAIN, 20));
         g.drawString("Player: " + playerName, 10, 620);
 
     }
@@ -233,11 +241,30 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
 
         gameLoop.start();
         makePipe.start();
+        
+        if (bgMusicClip != null) {
+            bgMusicClip.stop();               // Stop if playing
+            bgMusicClip.setFramePosition(0);  // Rewind
+            bgMusicClip.loop(Clip.LOOP_CONTINUOUSLY); // Start looping again
+        }
 
         requestFocusInWindow(); // regain focus for key events
         repaint();
     }
     
+    Clip bgMusicClip;
+    public void playBackgroundMusic(String filepath) {
+        try {
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(new File(filepath));
+            bgMusicClip = AudioSystem.getClip();
+            bgMusicClip.open(audioStream);
+            bgMusicClip.loop(Clip.LOOP_CONTINUOUSLY); // background music loops forever
+            bgMusicClip.start();
+        } catch (Exception e) {
+            System.out.println("Error playing music: " + e.getMessage());
+        }
+    }
+   
     public void saveGame() {
         File gameData = new File("bird.txt");
         int highScore = 0;
@@ -278,19 +305,18 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
         if(gameOver){
             makePipe.stop();
             gameLoop.stop();
+            bgMusicClip.stop(); // to stop music when it's game over
             saveGame();
         }
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {
-        throw new UnsupportedOperationException("Unimplemented method 'keyTyped'");
-    }
+    public void keyTyped(KeyEvent e) {}
 
     @Override
     public void keyPressed(KeyEvent e) {
         if (!gameOver) {
-            if (e.getKeyCode()==KeyEvent.VK_SPACE){
+            if (e.getKeyCode()==KeyEvent.VK_UP){
                 speedY = -9;
             }
         } else if (gameOver && showRestartPrompt) {
@@ -302,6 +328,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener{
 
 
     @Override
-    public void keyReleased(KeyEvent e) {
-        }
-	}
+    public void keyReleased(KeyEvent e) {}
+
+}
